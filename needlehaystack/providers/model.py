@@ -1,13 +1,13 @@
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union
 
 class ModelProvider(ABC):
     @abstractmethod
     async def evaluate_model(self, prompt: str) -> str: ...
 
     @abstractmethod
-    def generate_prompt(self, context: str, retrieval_question: str) -> str | list[dict[str, str]]: ...
+    def generate_prompt(self, context: str, retrieval_question: str) -> Union[str, list[dict[str, str]]]: ...
 
     @abstractmethod
     def encode_text_to_tokens(self, text: str) -> list[int]: ...

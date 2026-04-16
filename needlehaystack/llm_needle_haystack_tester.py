@@ -94,7 +94,7 @@ class LLMNeedleHaystackTester:
         if document_depth_percents is None:
             if document_depth_percent_min is None or document_depth_percent_max is None or document_depth_percent_intervals is None:
                 raise ValueError("Either document_depth_percent_min, document_depth_percent_max, document_depth_percent_intervals need to be filled out OR the document_depth_percents needs to be supplied.")
-            
+
             if document_depth_percent_interval_type == 'linear':
                 self.document_depth_percents = np.round(np.linspace(document_depth_percent_min, document_depth_percent_max, num=document_depth_percent_intervals, endpoint=True)).astype(int)
             elif document_depth_percent_interval_type == 'sigmoid':
@@ -103,10 +103,10 @@ class LLMNeedleHaystackTester:
                 raise ValueError("document_depth_percent_interval_type must be either 'sigmoid' or 'linear' if document_depth_percents is None.")
         else:
             self.document_depth_percents = document_depth_percents
-        
+
         self.model_to_test = model_to_test
         self.model_name = self.model_to_test.model_name
-        
+
         self.evaluation_model = evaluator
 
     def logistic(self, x, L=100, x0=50, k=.1):
@@ -114,10 +114,10 @@ class LLMNeedleHaystackTester:
             return x
         x = -k * (x - x0)
         return np.round(L * self.sigmoid(x), 3)
-    
+
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-    
+
     async def bound_evaluate_and_log(self, sem, *args):
         async with sem:
             await self.evaluate_and_log(*args)
@@ -182,7 +182,7 @@ class LLMNeedleHaystackTester:
             print (f"Score: {score}")
             print (f"Response: {response}\n")
 
-        context_file_location = f'{self.model_name.replace(".", "_")}_len_{context_length}_depth_{int(depth_percent*100)}'
+        context_file_location = f'{self.model_name.replace(".", "_").replace("/", "--")}_len_{context_length}_depth_{int(depth_percent*100)}'
 
         if self.save_contexts:
             results['file_name'] = context_file_location
@@ -193,7 +193,7 @@ class LLMNeedleHaystackTester:
 
             with open(f'contexts/{context_file_location}_context.txt', 'w') as f:
                 f.write(context)
-            
+
         if self.save_results:
             # Save the context to file for retesting
             if not os.path.exists('results'):
@@ -214,7 +214,7 @@ class LLMNeedleHaystackTester:
         results_dir = 'results/'
         if not os.path.exists(results_dir):
             return False
-        
+
         for filename in os.listdir(results_dir):
             if filename.endswith('.json'):
                 with open(os.path.join(results_dir, filename), 'r') as f:
@@ -240,7 +240,7 @@ class LLMNeedleHaystackTester:
         context = self.insert_needle(context, depth_percent, context_length)
 
         return context
-    
+
     def insert_needle(self, context, depth_percent, context_length):
         tokens_needle = self.model_to_test.encode_text_to_tokens(self.needle)
         tokens_context = self.model_to_test.encode_text_to_tokens(context)
@@ -264,7 +264,7 @@ class LLMNeedleHaystackTester:
 
             # We want to make sure that we place our needle at a sentence break so we first see what token a '.' is
             period_tokens = self.model_to_test.encode_text_to_tokens('.')
-            
+
             # Then we iteration backwards until we find the first period
             while tokens_new_context and tokens_new_context[-1] not in period_tokens:
                 insertion_point -= 1
@@ -297,10 +297,10 @@ class LLMNeedleHaystackTester:
         if len(tokens) > context_length:
             context = self.model_to_test.decode_tokens(tokens, context_length)
         return context
-    
+
     def get_results(self):
         return self.testing_results
-    
+
     def print_start_test_summary(self):
         print ("\n")
         print ("Starting Needle In A Haystack Testing...")

@@ -1,66 +1,88 @@
 import os
+from typing import Optional
 
 from .evaluator import Evaluator
 
 from langchain.evaluation import load_evaluator
 from langchain_community.chat_models import ChatOpenAI
 
+
 class OpenAIEvaluator(Evaluator):
-    DEFAULT_MODEL_KWARGS: dict = dict(temperature=0)
-    CRITERIA = {"accuracy": """
-                Score 1: The answer is completely unrelated to the reference.
-                Score 3: The answer has minor relevance but does not align with the reference.
-                Score 5: The answer has moderate relevance but contains inaccuracies.
-                Score 7: The answer aligns with the reference but has minor omissions.
-                Score 10: The answer is completely accurate and aligns perfectly with the reference.
-                Only respond with a numberical score"""}
+  DEFAULT_MODEL_KWARGS: dict = dict(temperature=0)
+  CRITERIA = {
+      "accuracy":
+          """
+          Score 1: The answer is completely unrelated to the reference.
+          Score 3: The answer has minor relevance but does not align with the reference.
+          Score 5: The answer has moderate relevance but contains inaccuracies.
+          Score 7: The answer aligns with the reference but has minor omissions.
+          Score 10: The answer is completely accurate and aligns perfectly with the reference.
+          Only respond with a numerical score"""
+  }
 
-    def __init__(self,
-                 model_name: str = "gpt-3.5-turbo-0125",
-                 model_kwargs: dict = DEFAULT_MODEL_KWARGS,
-                 true_answer: str = None,
-                 question_asked: str = None,):
-        """
-        :param model_name: The name of the model.
-        :param model_kwargs: Model configuration. Default is {temperature: 0}
-        :param true_answer: The true answer to the question asked.
-        :param question_asked: The question asked to the model.
-        """
+  def __init__(
+      self,
+      model_name: str = "gpt-3.5-turbo-0125",
+      model_kwargs: dict = DEFAULT_MODEL_KWARGS,
+      true_answer: str = None,
+      question_asked: str = None,
+      base_url: Optional[str] = None,
+  ):
+    """
+    :param model_name: The name of the model.
+    :param model_kwargs: Model configuration. Default is {temperature: 0}
+    :param true_answer: The true answer to the question asked.
+    :param question_asked: The question asked to the model.
+    :param base_url: The base URL for the OpenAI API. Defaults to None.
+    """
 
-        if (not true_answer) or (not question_asked):
-            raise ValueError("true_answer and question_asked must be supplied with init.")
+    if (not true_answer) or (not question_asked):
+      raise ValueError(
+          "true_answer and question_asked must be supplied with init.")
 
-        self.model_name = model_name
-        self.model_kwargs = model_kwargs
-        self.true_answer = true_answer
-        self.question_asked = question_asked
+    self.model_name = model_name
+    self.model_kwargs = model_kwargs
+    self.true_answer = true_answer
+    self.question_asked = question_asked
+    self.base_url = base_url
 
-        api_key = os.getenv('NIAH_EVALUATOR_API_KEY')
-        if (not api_key):
-            raise ValueError("NIAH_EVALUATOR_API_KEY must be in env for using openai evaluator.")
+    api_key = os.getenv('NIAH_EVALUATOR_API_KEY')
+    if (not api_key):
+      raise ValueError(
+          "NIAH_EVALUATOR_API_KEY must be in env for using openai evaluator.")
 
-        self.api_key = api_key
-        
-        self.evaluator = ChatOpenAI(model=self.model_name,
-                                    openai_api_key=self.api_key,
-                                    **self.model_kwargs)
+    self.api_key = api_key
 
-    def evaluate_response(self, response: str) -> int:
-        evaluator = load_evaluator(
-            "labeled_score_string",
-            criteria=self.CRITERIA,
-            llm=self.evaluator,
-        )
+    chat_openai_kwargs = {
+        "model": self.model_name,
+        "openai_api_key": self.api_key,
+        **self.model_kwargs
+    }
+    if self.base_url:
+      chat_openai_kwargs["openai_api_base"] = self.base_url
 
-        eval_result = evaluator.evaluate_strings(
-            # The models response
-            prediction=response,
+    self.evaluator = ChatOpenAI(**chat_openai_kwargs)
 
-            # The actual answer
-            reference=self.true_answer,
+  def evaluate_response(self, response: str) -> int:
+    evaluator = load_evaluator(
+        "labeled_score_string",
+        criteria=self.CRITERIA,
+        llm=self.evaluator,
+    )
 
-            # The question asked
-            input=self.question_asked,
-        )
+    try:
+      eval_result = evaluator.evaluate_strings(
+          # The models response
+          prediction=response,
 
-        return int(eval_result['score'])
+          # The actual answer
+          reference=self.true_answer,
+
+          # The question asked
+          input=self.question_asked,
+      )
+
+      return int(eval_result['score'])
+    except Exception as e:
+      print(f"Error evaluating response: {e}")
+      return 1

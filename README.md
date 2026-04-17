@@ -36,10 +36,10 @@ source venv/bin/activate
 
 ### Install Package
 
-Install the package from PyPi:
+**Important: To run local openai endpoints, you must install it from this directory.** Do not use `pip install needlehaystack`, as that will install the version from the original repository.
 
 ```zsh
-pip install needlehaystack
+pip install -e .
 ```
 
 ### Run Test
@@ -52,6 +52,7 @@ You can then run the analysis on OpenAI, Anthropic, or Cohere models with the fo
 - `evaluator` - The evaluator, which can either be a `model` or `LangSmith`. See more on `LangSmith` below. If using a `model`, only `openai` is currently supported. Defaults to `openai`.
 - `model_name` - Model name of the language model accessible by the provider. Defaults to `gpt-3.5-turbo-0125`
 - `evaluator_model_name` - Model name of the language model accessible by the evaluator. Defaults to `gpt-3.5-turbo-0125`
+- `base_url` - The base URL for the OpenAI API. Defaults to None.
 
 Additionally, `LLMNeedleHaystackTester` parameters can also be passed as command line arguments, except `model_to_test` and `evaluator`.
 
@@ -73,6 +74,12 @@ Following command runs the test for cohere model `command-r` for a single contex
 
 ```zsh
 needlehaystack.run_test --provider cohere --model_name "command-r" --document_depth_percents "[50]" --context_lengths "[2000]"
+```
+
+Following command runs the test for an OpenAI-compatible model using a custom base URL.
+
+```zsh
+needlehaystack.run_test --provider openai --model_name "local-model" --base_url "http://localhost:8000/v1" --document_depth_percents "[50]" --context_lengths "[2000]"
 ```
 ### For Contributors
 
@@ -119,6 +126,7 @@ The package `needlehaystack` is available for import in your test cases. Develop
 Other Parameters:
 
 - `model_name` - The name of the model you'd like to use. Should match the exact value which needs to be passed to the api. Ex: For OpenAI inference and evaluator models it would be `gpt-3.5-turbo-0125`.
+- `base_url` - The base URL for the OpenAI API. Defaults to None.
 
 ## Results Visualization
 
